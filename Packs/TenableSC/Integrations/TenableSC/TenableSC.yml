@@ -1,0 +1,135 @@
+commonfields:
+  id: TenableSC
+  version: -1
+name: TenableSC
+display: TenableSC
+description: Pulls vulnerability findings from Tenable.sc using the /analysis endpoint for daily XSIAM ingestion.
+category: Vulnerability Management
+script:
+  name: TenableSC
+  script: '-'
+  type: python
+  subtype: python3
+  dockerimage: demisto/python3:3.11.10.115186
+  isfetch: true
+  commands:
+  - name: tenablesc-test
+    description: Test connectivity and authentication.
+  - name: tenablesc-query-analysis
+    description: Run an ad-hoc query against /analysis.
+    arguments:
+    - name: page_size
+      description: Number of rows to retrieve per page.
+    - name: start_offset
+      description: Offset to start retrieving rows from.
+    - name: since
+      description: Optional ISO date-time filter for last seen vulnerabilities.
+      isArray: false
+fromversion: 6.10.0
+configuration:
+- display: Tenable.sc Host
+  name: url
+  type: 0
+  required: true
+  section: Connect
+  additionalinfo: Hostname or full URL for Tenable.sc (without /rest).
+- display: Port
+  name: port
+  type: 0
+  defaultvalue: '443'
+  required: true
+  section: Connect
+- display: Authentication Mode
+  name: auth_mode
+  type: 15
+  required: true
+  defaultvalue: api_keys
+  options:
+  - api_keys
+  - token
+  section: Connect
+- display: Access / Secret Key (API Keys mode)
+  name: credentials
+  type: 9
+  required: false
+  hiddenusername: false
+  displaypassword: Secret Key
+  section: Connect
+- display: Username
+  name: username
+  type: 0
+  required: false
+  section: Connect
+  additionalinfo: Required when Authentication Mode is token.
+- display: Password
+  name: password
+  type: 4
+  required: false
+  section: Connect
+  additionalinfo: Required when Authentication Mode is token.
+- display: Trust any certificate (not secure)
+  name: insecure
+  type: 8
+  required: false
+  section: Connect
+- display: Use system proxy settings
+  name: proxy
+  type: 8
+  required: false
+  section: Connect
+- display: HTTP request timeout (seconds)
+  name: timeout
+  type: 0
+  defaultvalue: '60'
+  required: false
+  section: Connect
+- display: Retry attempts for 429/5xx responses
+  name: retries
+  type: 0
+  defaultvalue: '5'
+  required: false
+  section: Connect
+- display: Backoff factor between retries
+  name: backoff_factor
+  type: 0
+  defaultvalue: '1'
+  required: false
+  section: Connect
+- display: Fetch incidents
+  name: isFetch
+  type: 8
+  required: false
+  section: Collect
+- display: Max incidents per fetch
+  name: max_fetch
+  type: 0
+  defaultvalue: '1000'
+  required: false
+  section: Collect
+- display: First fetch lookback (days)
+  name: first_fetch
+  type: 0
+  defaultvalue: '2'
+  required: false
+  section: Collect
+  additionalinfo: Defines initial lookback period and can be used as a daily backfill window.
+
+outputs:
+- contextPath: TenableSC.Analysis.id
+  description: Result identifier (if present).
+  type: String
+- contextPath: TenableSC.Analysis.pluginID
+  description: Tenable plugin identifier.
+  type: String
+- contextPath: TenableSC.Analysis.lastSeen
+  description: Last time the vulnerability was observed.
+  type: Date
+- contextPath: TenableSC.Analysis.ip
+  description: Asset IP address.
+  type: String
+- contextPath: TenableSC.Analysis.severity
+  description: Vulnerability severity.
+  type: String
+
+tests:
+- No test

@@ -1,0 +1,27 @@
+{
+  "name": "TenableSC",
+  "description": "Tenable.sc vulnerability ingestion for Cortex XSIAM using /analysis.",
+  "support": "xsoar",
+  "currentVersion": "1.0.0",
+  "author": "Community",
+  "url": "https://www.paloaltonetworks.com/",
+  "email": "",
+  "created": "2026-02-17T00:00:00Z",
+  "categories": [
+    "Vulnerability Management"
+  ],
+  "tags": [
+    "Tenable",
+    "Vulnerability",
+    "XSIAM"
+  ],
+  "useCases": [],
+  "keywords": [
+    "tenablesc",
+    "analysis",
+    "vulnerability"
+  ],
+  "marketplaces": [
+    "xsiam"
+  ]
+}
