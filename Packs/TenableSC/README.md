@@ -15,6 +15,7 @@ The integration is built for daily polling via the standard XSIAM **Fetch Incide
      - `token`: supply Username/Password
    - **Fetch incidents**: enable
    - **First fetch lookback (days)**: set backfill window
+   - **XSIAM dataset name for raw records**: defaults to `tenable.sc_raw`
 3. Optionally tune reliability settings:
    - Request timeout
    - Retry count for 429/5xx
@@ -22,6 +23,7 @@ The integration is built for daily polling via the standard XSIAM **Fetch Incide
 
 ## Daily pull behavior
 - Fetch uses `last_run.last_fetch` and a configurable lookback for initial/backfill behavior.
+- Each fetched row is also written to XSIAM dataset `tenable.sc_raw` (or configured dataset) together with the formatted incident payload.
 - Data is pulled with paginated POST calls to `/analysis`.
 - Alerts are deduplicated using a stable key based on:
   - `pluginID`

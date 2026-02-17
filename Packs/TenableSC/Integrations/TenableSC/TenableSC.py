@@ -18,6 +18,7 @@ DATE_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
 DEFAULT_PAGE_SIZE = 200
 DEFAULT_FETCH_LOOKBACK_DAYS = 2
 DEFAULT_FETCH_LIMIT = 1000
+DEFAULT_DATASET_NAME = 'tenable.sc_raw'
 
 
 class TenableSCClient(BaseClient):
@@ -196,6 +197,30 @@ def build_dedupe_key(item: dict[str, Any]) -> str:
     return hashlib.sha256(raw.encode('utf-8')).hexdigest()
 
 
+
+
+def push_dataset_records(dataset_name: str, records: list[dict[str, Any]]) -> None:
+    """Push records to a Cortex XSIAM dataset in parallel with incident creation."""
+    if not records:
+        return
+
+    # Manager step (write to Cortex): send raw+formatted records to custom XSIAM dataset.
+    try:
+        # Prefer native events ingestion API when available in the running Cortex environment.
+        demisto.events(records)
+        return
+    except Exception:
+        pass
+
+    # Fallback path for environments exposing dataset ingestion via automation command.
+    res = demisto.executeCommand('xdr-dataset-push-events', {
+        'dataset': dataset_name,
+        'events': json.dumps(records),
+    })
+    if is_error(res):
+        raise DemistoException(f'Failed pushing events to dataset {dataset_name}: {get_error(res)}')
+
+
 def map_alert(item: dict[str, Any], fallback_time: datetime) -> dict[str, Any]:
     # Manager step: transform Tenable.sc vulnerability result into Cortex/XSIAM incident schema.
     occurred_dt = extract_time(item, fallback_time)
@@ -242,7 +267,7 @@ def query_analysis_command(client: TenableSCClient, args: dict[str, Any]) -> Com
     )
 
 
-def fetch_incidents(client: TenableSCClient, max_results: int, lookback_days: int) -> None:
+def fetch_incidents(client: TenableSCClient, max_results: int, lookback_days: int, dataset_name: str) -> None:
     # Manager step: read previous fetch checkpoint from Cortex so we only ingest new/updated findings.
     last_run = demisto.getLastRun() or {}
     now = datetime.now(timezone.utc)
@@ -255,6 +280,7 @@ def fetch_incidents(client: TenableSCClient, max_results: int, lookback_days: in
     rows = client.query_analysis(start_offset=0, page_size=min(max_results, DEFAULT_PAGE_SIZE), since_time=last_fetch)
 
     incidents: list[dict[str, Any]] = []
+    dataset_records: list[dict[str, Any]] = []
     seen = set(last_run.get('seen_ids', []))
     max_seen_size = 5000
 
@@ -265,6 +291,14 @@ def fetch_incidents(client: TenableSCClient, max_results: int, lookback_days: in
         # Manager step: map raw Tenable.sc record into Cortex incident payload.
         alert = map_alert(row, fallback_time=now)
         incidents.append(alert)
+        dataset_records.append({
+            'dataset': dataset_name,
+            'event_type': 'tenablesc_vulnerability',
+            'event_timestamp': alert.get('occurred'),
+            'dedupe_key': dedupe,
+            'raw_tenable_output': row,
+            'formatted_incident': alert,
+        })
         seen.add(dedupe)
         if len(incidents) >= max_results:
             break
@@ -274,6 +308,8 @@ def fetch_incidents(client: TenableSCClient, max_results: int, lookback_days: in
     demisto.setLastRun({'last_fetch': now.strftime(DATE_FORMAT), 'seen_ids': next_seen})
     # Manager step (write to Cortex): submit prepared incidents to XSIAM ingestion pipeline.
     demisto.incidents(incidents)
+    # Manager step (write to Cortex): push raw+formatted fetch records to tenable.sc_raw dataset in parallel.
+    push_dataset_records(dataset_name=dataset_name, records=dataset_records)
 
 
 def main() -> None:
@@ -312,7 +348,8 @@ def main() -> None:
         elif command == 'fetch-incidents':
             max_results = arg_to_number(params.get('max_fetch')) or DEFAULT_FETCH_LIMIT
             lookback_days = arg_to_number(params.get('first_fetch')) or DEFAULT_FETCH_LOOKBACK_DAYS
-            fetch_incidents(client, max_results=max_results, lookback_days=lookback_days)
+            dataset_name = params.get('dataset_name') or DEFAULT_DATASET_NAME
+            fetch_incidents(client, max_results=max_results, lookback_days=lookback_days, dataset_name=dataset_name)
         elif command == 'tenablesc-query-analysis':
             return_results(query_analysis_command(client, demisto.args()))
         elif command == 'tenablesc-test':

@@ -113,6 +113,13 @@ configuration:
   required: false
   section: Collect
   additionalinfo: Defines initial lookback period and can be used as a daily backfill window.
+- display: XSIAM dataset name for raw records
+  name: dataset_name
+  type: 0
+  defaultvalue: tenable.sc_raw
+  required: false
+  section: Collect
+  additionalinfo: Dataset that receives both raw Tenable.sc output and formatted incident payloads in parallel with incident creation.
 
 outputs:
 - contextPath: TenableSC.Analysis.id

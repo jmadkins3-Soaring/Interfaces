@@ -2,7 +2,7 @@
   "name": "TenableSC",
   "description": "Tenable.sc vulnerability ingestion for Cortex XSIAM using /analysis.",
   "support": "xsoar",
-  "currentVersion": "1.0.0",
+  "currentVersion": "1.0.1",
   "author": "Community",
   "url": "https://www.paloaltonetworks.com/",
   "email": "",
