@@ -58,10 +58,12 @@ class TenableSCClient(BaseClient):
         }
 
         if auth_mode == 'api_keys':
+            # Manager step: configure Tenable.sc API-key authentication header used on every API call.
             if not access_key or not secret_key:
                 raise DemistoException('Access Key and Secret Key are required for API key authentication.')
             self._headers['x-apikey'] = f'accessKey={access_key}; secretKey={secret_key}'
         elif auth_mode == 'token':
+            # Manager step: obtain a session token from Tenable.sc before querying /analysis.
             if not username or not password:
                 raise DemistoException('Username and Password are required for token authentication.')
             self._authenticate_token(username, password)
@@ -69,6 +71,7 @@ class TenableSCClient(BaseClient):
             raise DemistoException(f'Unsupported authentication mode: {auth_mode}')
 
     def _authenticate_token(self, username: str, password: str) -> None:
+        # Manager step (API call): authenticate against Tenable.sc /token and cache token in headers.
         response = self._request('POST', '/token', data={'username': username, 'password': password}, add_headers=False)
         token = response.get('response', {}).get('token')
         if not token:
@@ -82,6 +85,7 @@ class TenableSCClient(BaseClient):
             'Accept': 'application/json',
             'Content-Type': 'application/json',
         }
+        # Manager step (API call): execute HTTP request to Tenable.sc with retry/backoff and timeout settings.
         response: Response = self.session.request(
             method=method,
             url=url,
@@ -133,12 +137,14 @@ class TenableSCClient(BaseClient):
                 'endOffset': end_offset,
             }
 
+            # Manager step (API call): retrieve a single page of vulnerability data from /analysis.
             response = self._request('POST', '/analysis', data=payload)
             rows = response.get('response', {}).get('results') or response.get('response', {}).get('usable') or []
             if not isinstance(rows, list):
                 raise DemistoException('Unexpected /analysis response structure: expected results list.')
 
             all_rows.extend(rows)
+            # Manager step: continue pagination until the API returns less than a full page.
             if len(rows) < page_size:
                 break
             current += page_size
@@ -191,6 +197,7 @@ def build_dedupe_key(item: dict[str, Any]) -> str:
 
 
 def map_alert(item: dict[str, Any], fallback_time: datetime) -> dict[str, Any]:
+    # Manager step: transform Tenable.sc vulnerability result into Cortex/XSIAM incident schema.
     occurred_dt = extract_time(item, fallback_time)
     occurred = occurred_dt.astimezone(timezone.utc).strftime(DATE_FORMAT)
     plugin_id = item.get('pluginID') or item.get('pluginId') or 'unknown-plugin'
@@ -211,6 +218,7 @@ def map_alert(item: dict[str, Any], fallback_time: datetime) -> dict[str, Any]:
 
 
 def test_module(client: TenableSCClient) -> str:
+    # Manager step (API call): run a minimal /analysis query to validate connectivity and credentials.
     _ = client.query_analysis(start_offset=0, page_size=1, since_time=None)
     return 'ok'
 
@@ -221,6 +229,7 @@ def query_analysis_command(client: TenableSCClient, args: dict[str, Any]) -> Com
     since = args.get('since')
     since_dt = parse_date_string(since) if since else None
 
+    # Manager step (API call): execute analyst-requested /analysis query for troubleshooting.
     rows = client.query_analysis(start_offset=start_offset, page_size=page_size, since_time=since_dt)
     human_readable = tableToMarkdown('TenableSC Analysis Results', rows)
 
@@ -234,6 +243,7 @@ def query_analysis_command(client: TenableSCClient, args: dict[str, Any]) -> Com
 
 
 def fetch_incidents(client: TenableSCClient, max_results: int, lookback_days: int) -> None:
+    # Manager step: read previous fetch checkpoint from Cortex so we only ingest new/updated findings.
     last_run = demisto.getLastRun() or {}
     now = datetime.now(timezone.utc)
     lookback_start = now - timedelta(days=lookback_days)
@@ -241,6 +251,7 @@ def fetch_incidents(client: TenableSCClient, max_results: int, lookback_days: in
     if not last_fetch.tzinfo:
         last_fetch = last_fetch.replace(tzinfo=timezone.utc)
 
+    # Manager step (API call): fetch paginated vulnerabilities from Tenable.sc /analysis since last checkpoint.
     rows = client.query_analysis(start_offset=0, page_size=min(max_results, DEFAULT_PAGE_SIZE), since_time=last_fetch)
 
     incidents: list[dict[str, Any]] = []
@@ -251,6 +262,7 @@ def fetch_incidents(client: TenableSCClient, max_results: int, lookback_days: in
         dedupe = build_dedupe_key(row)
         if dedupe in seen:
             continue
+        # Manager step: map raw Tenable.sc record into Cortex incident payload.
         alert = map_alert(row, fallback_time=now)
         incidents.append(alert)
         seen.add(dedupe)
@@ -258,11 +270,14 @@ def fetch_incidents(client: TenableSCClient, max_results: int, lookback_days: in
             break
 
     next_seen = list(seen)[-max_seen_size:]
+    # Manager step (write to Cortex): persist next fetch checkpoint and dedupe cache in LastRun state.
     demisto.setLastRun({'last_fetch': now.strftime(DATE_FORMAT), 'seen_ids': next_seen})
+    # Manager step (write to Cortex): submit prepared incidents to XSIAM ingestion pipeline.
     demisto.incidents(incidents)
 
 
 def main() -> None:
+    # Manager step: normalize user-provided host/port into Tenable.sc REST base URL.
     params = demisto.params()
     host = params.get('url', '').strip().rstrip('/')
     port = str(params.get('port') or '443').strip()
@@ -272,6 +287,7 @@ def main() -> None:
 
     base_url = f'{host}:{port}/rest'
 
+    # Manager step: build API client with auth/retry/transport options configured in integration instance.
     client = TenableSCClient(
         base_url=base_url,
         verify=not params.get('insecure', False),
@@ -290,6 +306,7 @@ def main() -> None:
     demisto.debug(f'Command being called is {command}')
 
     try:
+        # Manager step: route Cortex command to the correct workflow (test, fetch, or ad-hoc query).
         if command == 'test-module':
             return_results(test_module(client))
         elif command == 'fetch-incidents':
