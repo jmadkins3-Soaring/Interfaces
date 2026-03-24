@@ -1,5 +1,4 @@
-# voip-sdr-gateway dependencies
-# Install with: pip install -r requirements.txt
+# voip-sdr-gateway v2 dependencies
 
 # Core
 pyyaml>=6.0
@@ -10,11 +9,28 @@ pyzmq>=25.0
 # SIP stack (pure Python, Python 3.12 compatible)
 pyVoIP>=1.6.8
 
-# GNU Radio and SDR hardware are system packages — install via apt:
+# Serial communication (DVSI USB-3000 dongle)
+pyserial>=3.5
+
+# GNU Radio and SDR hardware — system packages:
 #   sudo apt install gnuradio gr-osmosdr
-#   sudo apt install hackrf        # HackRF One
-#   sudo apt install limesuite     # LimeSDR
-#   sudo apt install uhd-host      # USRP
+#
+# Pluto+ native driver (gr-iio, built into GNU Radio 3.10+):
+#   sudo apt install gnuradio          # includes gr-iio on 3.10+
+#   sudo apt install libiio-utils      # iio_attr, iio_info tools
+#   sudo apt install libad9361-dev     # AD9363/AD9364 filter library
+#
+# Pluto+ firmware and drivers:
+#   https://wiki.analog.com/university/tools/pluto/drivers/linux
+#
+# DMR support (MMDVMHost + MMDVM-SDR):
+#   git clone https://github.com/g4klx/MMDVMHost
+#   git clone https://github.com/phl0/MMDVM-SDR
+#   Build and install both per their respective READMEs
+#
+# DVSI USB-3000 dongle:
+#   No additional drivers needed on Linux (presents as USB serial)
+#   User must be in 'dialout' group: sudo usermod -aG dialout $USER
 
 # Testing
 pytest>=7.0

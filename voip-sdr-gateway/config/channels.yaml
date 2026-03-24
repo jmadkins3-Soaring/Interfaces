@@ -1,44 +1,43 @@
 # ============================================================
-# VoIP-SDR Radio Gateway — Channel Configuration
-# channels.yaml
+# VoIP-SDR Radio Gateway — Channel Configuration  v2
 #
-# Each entry registers as an independent SIP UA on the PBX.
-# The PBX has zero knowledge of radio — it dials a "phone"
-# that happens to modulate RF instead of playing audio.
+# Pluto+ optimizations applied:
+#   - device_args: ip:<addr>  (Ethernet, not USB)
+#   - sample_rate: 520833     (minimum valid, filter_source=Auto)
+#   - buffer_size: 32768      (~63ms latency at 520kSPS)
 #
-# LEGAL NOTICE: Transmitting on licensed frequencies without
-# the appropriate license (Ham, GMRS, etc.) is illegal.
-# Configure only frequencies you are licensed to use.
+# DMR channels only register when DVSI USB-3000 dongle detected.
+# CB 27.185 MHz disabled — below Pluto+ 70MHz minimum.
 # ============================================================
 
 pbx:
-  host: "192.168.1.10"         # Asterisk / FreeSWITCH IP
+  host: "192.168.1.10"
   port: 5060
-  transport: udp                # udp | tcp | tls
+  transport: udp
 
 sdr:
-  driver: hackrf                # hackrf | limesdr | usrp | plutosdr
-  device_args: ""               # SoapySDR device args, e.g. "serial=0001"
-  sample_rate: 2_000_000        # 2 MSPS — adjust per hardware
-  audio_sample_rate: 8000       # RTP delivers 8kHz ulaw/slinear
+  driver: plutosdr
+  device_args: "ip:192.168.2.1"   # Pluto+ Ethernet URI
+  sample_rate: 520833              # minimum valid rate (filter_source=Auto)
+  audio_sample_rate: 48000
+  buffer_size: 32768               # ~63ms at 520kSPS
+  # freq_corr omitted — Pluto+ VCTCXO is 0.5ppm, no correction needed
 
-# ============================================================
-# channels: each becomes one SIP registration on the PBX
-# ============================================================
+# ── Analog channels ──────────────────────────────────────────────────────────
 channels:
 
-  - sip_user: "radio-vhf-call"     # sip:radio-vhf-call@<pbx>
+  - sip_user: "radio-vhf-call"
     sip_pass: "s3cr3t_vhf"
-    extension: "201"               # The PBX extension callers dial
+    extension: "201"
     display_name: "VHF 146.52"
     freq_mhz: 146.520
-    mode: NFM                      # NFM | WFM | AM | USB | LSB
-    deviation_hz: 5000             # FM peak deviation
-    ctcss_tx_hz: 100.0             # CTCSS tone to encode on TX (0 = none)
-    ctcss_rx_hz: 100.0             # CTCSS to open squelch on RX (0 = open)
-    dcs_code: 0                    # DCS/DPL code (0 = disabled; takes priority over CTCSS)
-    tx_gain_db: 40                 # Hardware TX gain
-    license_note: "Ham - requires Technician or higher"
+    mode: NFM
+    deviation_hz: 5000
+    ctcss_tx_hz: 100.0
+    ctcss_rx_hz: 100.0
+    dcs_code: 0
+    tx_gain_db: 40
+    license_note: "Ham — Technician or higher"
 
   - sip_user: "radio-gmrs-1"
     sip_pass: "s3cr3t_gmrs1"
@@ -51,7 +50,7 @@ channels:
     ctcss_rx_hz: 141.3
     dcs_code: 0
     tx_gain_db: 40
-    license_note: "GMRS - FCC Part 95E license required"
+    license_note: "GMRS — FCC Part 95E"
 
   - sip_user: "radio-gmrs-6"
     sip_pass: "s3cr3t_gmrs6"
@@ -64,7 +63,7 @@ channels:
     ctcss_rx_hz: 167.9
     dcs_code: 0
     tx_gain_db: 40
-    license_note: "GMRS - FCC Part 95E license required"
+    license_note: "GMRS — FCC Part 95E"
 
   - sip_user: "radio-murs-1"
     sip_pass: "s3cr3t_murs1"
@@ -76,21 +75,8 @@ channels:
     ctcss_tx_hz: 0
     ctcss_rx_hz: 0
     dcs_code: 0
-    tx_gain_db: 30                 # MURS max ~2W ERP
-    license_note: "MURS - No license required (USA)"
-
-  - sip_user: "radio-cb-19"
-    sip_pass: "s3cr3t_cb19"
-    extension: "205"
-    display_name: "CB Ch19 27.185"
-    freq_mhz: 27.185
-    mode: AM
-    deviation_hz: 4000             # Used as AM bandwidth hint
-    ctcss_tx_hz: 0
-    ctcss_rx_hz: 0
-    dcs_code: 0
-    tx_gain_db: 35
-    license_note: "CB - No license required (USA)"
+    tx_gain_db: 30
+    license_note: "MURS — no license required (USA)"
 
   - sip_user: "radio-uhf-call"
     sip_pass: "s3cr3t_uhf"
@@ -103,17 +89,52 @@ channels:
     ctcss_rx_hz: 88.5
     dcs_code: 0
     tx_gain_db: 40
-    license_note: "Ham - requires Technician or higher"
+    license_note: "Ham — Technician or higher"
 
-  - sip_user: "radio-custom"
-    sip_pass: "s3cr3t_custom"
+  - sip_user: "radio-custom-dcs"
+    sip_pass: "s3cr3t_dcs"
     extension: "207"
-    display_name: "Custom 155.34"
+    display_name: "Custom 155.34 DCS"
     freq_mhz: 155.340
     mode: NFM
     deviation_hz: 5000
     ctcss_tx_hz: 0
     ctcss_rx_hz: 0
-    dcs_code: 156                  # DCS code example — overrides CTCSS when nonzero
+    dcs_code: 156
     tx_gain_db: 40
     license_note: "Verify coordination before use"
+
+  # CB 27.185 MHz — DISABLED (below Pluto+ 70MHz minimum)
+  # Use a dedicated HF radio or HackRF for CB
+  # - sip_user: "radio-cb-19"
+  #   freq_mhz: 27.185
+  #   mode: AM
+  #   license_note: "CB — no license required"
+
+# ── DMR channels (only registered when DVSI USB-3000 dongle present) ─────────
+
+  - sip_user: "radio-dmr-simplex"
+    sip_pass: "s3cr3t_dmr1"
+    extension: "301"
+    display_name: "DMR UHF Simplex 446.5"
+    freq_mhz: 446.500
+    mode: DMR
+    dmr_id: 3120101
+    dmr_colorcode: 1
+    dmr_timeslot: 1
+    dmr_talkgroup: 9
+    tx_gain_db: 40
+    license_note: "Ham — Technician or higher"
+
+  - sip_user: "radio-dmr-tg91"
+    sip_pass: "s3cr3t_dmr2"
+    extension: "302"
+    display_name: "DMR Worldwide TG91"
+    freq_mhz: 446.075
+    mode: DMR
+    dmr_id: 3120101
+    dmr_colorcode: 1
+    dmr_timeslot: 2
+    dmr_talkgroup: 91
+    tx_gain_db: 40
+    license_note: "Ham — General or higher for HF, Technician for VHF/UHF"
