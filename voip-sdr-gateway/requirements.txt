@@ -1,0 +1,20 @@
+# voip-sdr-gateway dependencies
+# Install with: pip install -r requirements.txt
+
+# Core
+pyyaml>=6.0
+numpy>=1.24
+scipy>=1.10
+pyzmq>=25.0
+
+# SIP stack (pure Python, Python 3.12 compatible)
+pyVoIP>=1.6.8
+
+# GNU Radio and SDR hardware are system packages — install via apt:
+#   sudo apt install gnuradio gr-osmosdr
+#   sudo apt install hackrf        # HackRF One
+#   sudo apt install limesuite     # LimeSDR
+#   sudo apt install uhd-host      # USRP
+
+# Testing
+pytest>=7.0

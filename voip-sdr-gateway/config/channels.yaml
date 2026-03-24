@@ -1,0 +1,119 @@
+# ============================================================
+# VoIP-SDR Radio Gateway — Channel Configuration
+# channels.yaml
+#
+# Each entry registers as an independent SIP UA on the PBX.
+# The PBX has zero knowledge of radio — it dials a "phone"
+# that happens to modulate RF instead of playing audio.
+#
+# LEGAL NOTICE: Transmitting on licensed frequencies without
+# the appropriate license (Ham, GMRS, etc.) is illegal.
+# Configure only frequencies you are licensed to use.
+# ============================================================
+
+pbx:
+  host: "192.168.1.10"         # Asterisk / FreeSWITCH IP
+  port: 5060
+  transport: udp                # udp | tcp | tls
+
+sdr:
+  driver: hackrf                # hackrf | limesdr | usrp | plutosdr
+  device_args: ""               # SoapySDR device args, e.g. "serial=0001"
+  sample_rate: 2_000_000        # 2 MSPS — adjust per hardware
+  audio_sample_rate: 8000       # RTP delivers 8kHz ulaw/slinear
+
+# ============================================================
+# channels: each becomes one SIP registration on the PBX
+# ============================================================
+channels:
+
+  - sip_user: "radio-vhf-call"     # sip:radio-vhf-call@<pbx>
+    sip_pass: "s3cr3t_vhf"
+    extension: "201"               # The PBX extension callers dial
+    display_name: "VHF 146.52"
+    freq_mhz: 146.520
+    mode: NFM                      # NFM | WFM | AM | USB | LSB
+    deviation_hz: 5000             # FM peak deviation
+    ctcss_tx_hz: 100.0             # CTCSS tone to encode on TX (0 = none)
+    ctcss_rx_hz: 100.0             # CTCSS to open squelch on RX (0 = open)
+    dcs_code: 0                    # DCS/DPL code (0 = disabled; takes priority over CTCSS)
+    tx_gain_db: 40                 # Hardware TX gain
+    license_note: "Ham - requires Technician or higher"
+
+  - sip_user: "radio-gmrs-1"
+    sip_pass: "s3cr3t_gmrs1"
+    extension: "202"
+    display_name: "GMRS Ch1 462.56"
+    freq_mhz: 462.5625
+    mode: NFM
+    deviation_hz: 5000
+    ctcss_tx_hz: 141.3
+    ctcss_rx_hz: 141.3
+    dcs_code: 0
+    tx_gain_db: 40
+    license_note: "GMRS - FCC Part 95E license required"
+
+  - sip_user: "radio-gmrs-6"
+    sip_pass: "s3cr3t_gmrs6"
+    extension: "203"
+    display_name: "GMRS Ch6 462.61"
+    freq_mhz: 462.6125
+    mode: NFM
+    deviation_hz: 5000
+    ctcss_tx_hz: 167.9
+    ctcss_rx_hz: 167.9
+    dcs_code: 0
+    tx_gain_db: 40
+    license_note: "GMRS - FCC Part 95E license required"
+
+  - sip_user: "radio-murs-1"
+    sip_pass: "s3cr3t_murs1"
+    extension: "204"
+    display_name: "MURS Ch1 151.82"
+    freq_mhz: 151.8200
+    mode: NFM
+    deviation_hz: 2500
+    ctcss_tx_hz: 0
+    ctcss_rx_hz: 0
+    dcs_code: 0
+    tx_gain_db: 30                 # MURS max ~2W ERP
+    license_note: "MURS - No license required (USA)"
+
+  - sip_user: "radio-cb-19"
+    sip_pass: "s3cr3t_cb19"
+    extension: "205"
+    display_name: "CB Ch19 27.185"
+    freq_mhz: 27.185
+    mode: AM
+    deviation_hz: 4000             # Used as AM bandwidth hint
+    ctcss_tx_hz: 0
+    ctcss_rx_hz: 0
+    dcs_code: 0
+    tx_gain_db: 35
+    license_note: "CB - No license required (USA)"
+
+  - sip_user: "radio-uhf-call"
+    sip_pass: "s3cr3t_uhf"
+    extension: "206"
+    display_name: "UHF 446.00"
+    freq_mhz: 446.000
+    mode: NFM
+    deviation_hz: 5000
+    ctcss_tx_hz: 88.5
+    ctcss_rx_hz: 88.5
+    dcs_code: 0
+    tx_gain_db: 40
+    license_note: "Ham - requires Technician or higher"
+
+  - sip_user: "radio-custom"
+    sip_pass: "s3cr3t_custom"
+    extension: "207"
+    display_name: "Custom 155.34"
+    freq_mhz: 155.340
+    mode: NFM
+    deviation_hz: 5000
+    ctcss_tx_hz: 0
+    ctcss_rx_hz: 0
+    dcs_code: 156                  # DCS code example — overrides CTCSS when nonzero
+    tx_gain_db: 40
+    license_note: "Verify coordination before use"

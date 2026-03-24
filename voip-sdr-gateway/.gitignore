@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+env/
+voip-sdr-venv/
+
+# Testing / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+*.xml
+
+# Secrets — never commit tokens or passwords
+.env
+*.env
+.git-credentials
+secrets.yaml
+secrets.yml
+
+# GNU Radio generated files
+*.grc.bak
+*.pyc
+
+# Audio / SDR captures
+*.wav
+*.iq
+*.bin
+*.sigmf-data
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
