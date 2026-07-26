@@ -1,0 +1,26 @@
+# Watchlist of third-party companies to monitor for dark web exposure.
+# Run:  python -m darkweb_intel monitor --watchlist config/watchlist.yaml --out-dir reports
+#
+# Each target needs a display 'company' and one or more 'selectors'. Selectors
+# are what Intelligence X searches for: a domain, an email/email-domain, a
+# brand name, an IP, etc. Add the ones that best identify the vendor.
+#
+# 'buckets' is optional; omit it to use the default dark-web/leak/paste set.
+
+targets:
+  - company: "Example Vendor Inc"
+    selectors:
+      - "examplevendor.com"
+      - "@examplevendor.com"
+      - "Example Vendor Inc"
+
+  - company: "Acme Supplier"
+    selectors:
+      - "acme-supplier.io"
+      - "@acme-supplier.io"
+    # Narrow this vendor to only the highest-signal sources:
+    buckets:
+      - "darknet.tor"
+      - "leaks.logs"
+      - "leaks.private.general"
+      - "leaks.public.general"

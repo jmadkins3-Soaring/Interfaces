@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+# Local watchlists and generated reports may contain sensitive selectors/results
+config/watchlist.yaml
+reports/
+*.report.json
+*.report.html
